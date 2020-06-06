@@ -1,0 +1,38 @@
+version: '2'
+
+services:
+  redis:
+    image: 'redis:alpine'
+    command: redis-server
+    volumes:
+      - 'redis:/var/lib/redis/data'
+    ports:
+      - '6379:6379'
+
+  flask:
+    build: .
+    command: >
+      gunicorn -b 0.0.0.0:8000
+        --access-logfile -
+        --log-level debug
+        --reload
+        "app.create_app:create_app()"
+    ports:
+      - '8000:8000'
+
+  celery:
+    build: .
+    command: celery worker -B -l info -A app.tasks.celery
+
+
+  celery-flower:
+    build: .
+    command: celery flower -A app.tasks.celery
+    ports:
+      - '5555:5555'
+    depends_on:
+      - celery
+  
+
+volumes:
+  redis:
